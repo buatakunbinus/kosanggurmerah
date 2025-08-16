@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useToast } from "../../ui/ToastProvider";
 import { useRooms } from "./useRooms";
+import { ROOM_CODES } from "./roomService";
 import { getEffectiveOccupants } from "./occupancyService";
 import { useMonth } from "../../ui/MonthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -105,7 +106,7 @@ export const RoomsTable: React.FC = () => {
         <div className="flex items-center gap-4 flex-wrap">
           {roomsQuery.data &&
             (() => {
-              const totalSlots = 60;
+              const totalSlots = ROOM_CODES.length;
               const occupied = roomsQuery.data.length;
               const left = Math.max(0, totalSlots - occupied);
               // calculate paid rooms using paymentByRoom + derivePaymentStatus
@@ -136,6 +137,10 @@ export const RoomsTable: React.FC = () => {
                     >
                       {sortByDue ? t("dueSortNearest") : t("dueSort")}
                     </button>
+                  </span>
+                  <span>
+                    {t("totalUnpaid")}: {" "}
+                    <span className="text-red-600">{Math.max(0, occupied - paid)}</span>
                   </span>
                   <span>
                     {t("roomsLeft")}:{" "}
@@ -177,17 +182,13 @@ export const RoomsTable: React.FC = () => {
             className="border rounded px-2 py-1 text-sm"
           >
             <option value="">{t("room")} #</option>
-            {Array.from({ length: 60 }, (_, i) =>
-              (i + 1).toString().padStart(2, "0")
-            )
-              .filter(
-                (num) => !(roomsQuery.data || []).some((r) => r.number === num)
-              )
-              .map((num) => (
-                <option key={num} value={num}>
-                  {num}
-                </option>
-              ))}
+            {ROOM_CODES.filter(
+              (code) => !(roomsQuery.data || []).some((r) => r.number === code)
+            ).map((code) => (
+              <option key={code} value={code}>
+                {code}
+              </option>
+            ))}
           </select>
           <input
             required
@@ -202,7 +203,7 @@ export const RoomsTable: React.FC = () => {
           <input
             type="number"
             min={1}
-            max={28}
+            max={31}
             value={form.due_day}
             onChange={(e) =>
               setForm((f) => ({ ...f, due_day: Number(e.target.value) }))
@@ -395,7 +396,7 @@ export const RoomsTable: React.FC = () => {
                               <input
                                 type="number"
                                 min={1}
-                                max={28}
+                                max={31}
                                 value={editValues.due_day}
                                 onChange={(e) =>
                                   setEditValues((v) =>
@@ -446,6 +447,22 @@ export const RoomsTable: React.FC = () => {
                                 }
                                 onClick={() => {
                                   if (!editValues) return;
+                                  // Enforce due_day range client-side to avoid DB constraint failure
+                                  if (
+                                    editValues.due_day < 1 ||
+                                    editValues.due_day > 31
+                                  ) {
+                                    push({
+                                      type: "error",
+                                      message: t("errorDueDayRange"),
+                                    });
+                                    return;
+                                  }
+                                  // Clamp values just in case
+                                  const safeDue = Math.min(
+                                    31,
+                                    Math.max(1, editValues.due_day)
+                                  );
                                   updateMut.mutate(
                                     {
                                       id: room.id,
@@ -456,7 +473,7 @@ export const RoomsTable: React.FC = () => {
                                             : null,
                                         status: editValues.status,
                                         rent_price: editValues.rent_price,
-                                        due_day: editValues.due_day,
+                                        due_day: safeDue,
                                       },
                                     },
                                     {
@@ -649,111 +666,301 @@ export const RoomsTable: React.FC = () => {
               const penalties = penaltiesByRoom[room.id] || [];
               const penaltyTotal = penalties.reduce((s, p) => s + p.amount, 0);
               const showPaymentAction = status !== "paid";
+              const isEditing = editingId === room.id;
+              // Initialize editValues if user refreshed the list while editing
+              if (isEditing && !editValues) {
+                setEditValues({
+                  tenant_name: room.tenant_name || "",
+                  status: room.status as "occupied" | "vacant",
+                  rent_price: room.rent_price,
+                  due_day: room.due_day,
+                });
+              }
               return (
                 <div
                   key={room.id}
                   className="border rounded bg-white p-3 shadow-sm flex flex-col gap-2"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sm">
-                      #{room.number}
-                    </span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded ${formatStatusBadgeColor(
-                        status
-                      )}`}
-                    >
-                      {status === "paid"
-                        ? t("paid")
-                        : status === "unpaid"
-                        ? t("unpaid")
-                        : status}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    <div>
-                      <span className="font-medium">{t("tenant")}:</span>{" "}
-                      {occupantName || <span className="text-gray-400">—</span>}
-                    </div>
-                    <div>
-                      <span className="font-medium">{t("rent")}:</span>{" "}
-                      {formatCurrency(room.rent_price)}
-                    </div>
-                    <div>
-                      <span className="font-medium">{t("dueDay")}:</span>{" "}
-                      {room.due_day}
-                    </div>
-                    <div>
-                      <span className="font-medium">{t("penalties")}:</span>{" "}
-                      {penalties.length} / {formatCurrency(penaltyTotal)}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-[11px] pt-1">
-                    {showPaymentAction && (
-                      <button
-                        onClick={() =>
-                          setOpenPaymentRoom((r) =>
-                            r === room.id ? null : room.id
-                          )
-                        }
-                        className="px-2 py-0.5 rounded bg-indigo-600 text-white"
-                      >
-                        {openPaymentRoom === room.id
-                          ? t("close")
-                          : t("recordPayment")}
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setEditingId(room.id);
-                        setEditValues({
-                          tenant_name: room.tenant_name || "",
-                          status: room.status as "occupied" | "vacant",
-                          rent_price: room.rent_price,
-                          due_day: room.due_day,
-                        });
-                      }}
-                      className="px-2 py-0.5 rounded bg-blue-600 text-white"
-                    >
-                      {t("edit")}
-                    </button>
-                    <button
-                      onClick={() =>
-                        deleteMut.mutate(room.id, {
-                          onSuccess: () =>
-                            push({
-                              type: "success",
-                              message: t("roomDeleted"),
-                            }),
-                          onError: (e) =>
-                            push({
-                              type: "error",
-                              message:
-                                e instanceof Error
-                                  ? e.message
-                                  : t("errorDeleteRoom"),
-                            }),
-                        })
-                      }
-                      className="px-2 py-0.5 rounded bg-red-600 text-white"
-                    >
-                      {t("delete")}
-                    </button>
-                  </div>
-                  {openPaymentRoom === room.id && (
-                    <div className="pt-2 border-t">
-                      <PaymentRecordForm
-                        roomId={room.id}
-                        payment={payment}
-                        amountDue={room.rent_price}
-                        billingMonth={month}
-                        dueDay={room.due_day}
-                        onSuccess={() => {
-                          setOpenPaymentRoom(null);
-                          paymentsQuery.refetch();
-                        }}
-                        onCancel={() => setOpenPaymentRoom(null)}
-                      />
+                  {!isEditing && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sm">
+                          #{room.number}
+                        </span>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded ${formatStatusBadgeColor(
+                            status
+                          )}`}
+                        >
+                          {status === "paid"
+                            ? t("paid")
+                            : status === "unpaid"
+                            ? t("unpaid")
+                            : status}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        <div>
+                          <span className="font-medium">{t("tenant")}:</span>{" "}
+                          {occupantName || (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="font-medium">{t("rent")}:</span>{" "}
+                          {formatCurrency(room.rent_price)}
+                        </div>
+                        <div>
+                          <span className="font-medium">{t("dueDay")}:</span>{" "}
+                          {room.due_day}
+                        </div>
+                        <div>
+                          <span className="font-medium">{t("penalties")}:</span>{" "}
+                          {penalties.length} / {formatCurrency(penaltyTotal)}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-[11px] pt-1">
+                        {showPaymentAction && (
+                          <button
+                            onClick={() =>
+                              setOpenPaymentRoom((r) =>
+                                r === room.id ? null : room.id
+                              )
+                            }
+                            className="px-2 py-0.5 rounded bg-indigo-600 text-white"
+                          >
+                            {openPaymentRoom === room.id
+                              ? t("close")
+                              : t("recordPayment")}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setEditingId(room.id);
+                            setEditValues({
+                              tenant_name: room.tenant_name || "",
+                              status: room.status as "occupied" | "vacant",
+                              rent_price: room.rent_price,
+                              due_day: room.due_day,
+                            });
+                          }}
+                          className="px-2 py-0.5 rounded bg-blue-600 text-white"
+                        >
+                          {t("edit")}
+                        </button>
+                        <button
+                          onClick={() =>
+                            deleteMut.mutate(room.id, {
+                              onSuccess: () =>
+                                push({
+                                  type: "success",
+                                  message: t("roomDeleted"),
+                                }),
+                              onError: (e) =>
+                                push({
+                                  type: "error",
+                                  message:
+                                    e instanceof Error
+                                      ? e.message
+                                      : t("errorDeleteRoom"),
+                                }),
+                            })
+                          }
+                          className="px-2 py-0.5 rounded bg-red-600 text-white"
+                        >
+                          {t("delete")}
+                        </button>
+                      </div>
+                      {openPaymentRoom === room.id && (
+                        <div className="pt-2 border-t">
+                          <PaymentRecordForm
+                            roomId={room.id}
+                            payment={payment}
+                            amountDue={room.rent_price}
+                            billingMonth={month}
+                            dueDay={room.due_day}
+                            onSuccess={() => {
+                              setOpenPaymentRoom(null);
+                              paymentsQuery.refetch();
+                            }}
+                            onCancel={() => setOpenPaymentRoom(null)}
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {isEditing && editValues && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sm">
+                          #{room.number} – {t("edit")}
+                        </span>
+                        <button
+                          onClick={() => {
+                            setEditingId(null);
+                            setEditValues(null);
+                          }}
+                          className="text-[11px] text-gray-500 underline"
+                          type="button"
+                        >
+                          {t("cancel")}
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <div className="col-span-2">
+                          <label className="block mb-1 font-medium">
+                            {t("status")}
+                          </label>
+                          <select
+                            value={editValues.status}
+                            onChange={(e) =>
+                              setEditValues((v) =>
+                                v
+                                  ? {
+                                      ...v,
+                                      status: e.target.value as
+                                        | "occupied"
+                                        | "vacant",
+                                      tenant_name:
+                                        e.target.value === "occupied"
+                                          ? v.tenant_name
+                                          : "",
+                                    }
+                                  : v
+                              )
+                            }
+                            className="w-full border rounded px-2 py-1"
+                          >
+                            <option value="occupied">{t("occupied")}</option>
+                            <option value="vacant">{t("vacant")}</option>
+                          </select>
+                        </div>
+                        {editValues.status === "occupied" && (
+                          <div className="col-span-2">
+                            <label className="block mb-1 font-medium">
+                              {t("tenant")}
+                            </label>
+                            <input
+                              value={editValues.tenant_name}
+                              onChange={(e) =>
+                                setEditValues((v) =>
+                                  v ? { ...v, tenant_name: e.target.value } : v
+                                )
+                              }
+                              className="w-full border rounded px-2 py-1"
+                              placeholder={t("tenant")}
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <label className="block mb-1 font-medium">
+                            {t("rent")}
+                          </label>
+                          <input
+                            type="number"
+                            value={editValues.rent_price}
+                            onChange={(e) =>
+                              setEditValues((v) =>
+                                v
+                                  ? { ...v, rent_price: Number(e.target.value) }
+                                  : v
+                              )
+                            }
+                            className="w-full border rounded px-2 py-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="block mb-1 font-medium">
+                            {t("dueDay")}
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={31}
+                            value={editValues.due_day}
+                            onChange={(e) =>
+                              setEditValues((v) =>
+                                v
+                                  ? { ...v, due_day: Number(e.target.value) }
+                                  : v
+                              )
+                            }
+                            className="w-full border rounded px-2 py-1"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          disabled={
+                            updateMut.isPending ||
+                            (editValues.status === "occupied" &&
+                              !editValues.tenant_name.trim())
+                          }
+                          onClick={() => {
+                            if (!editValues) return;
+                            if (
+                              editValues.due_day < 1 ||
+                              editValues.due_day > 31
+                            ) {
+                              push({
+                                type: "error",
+                                message: t("errorDueDayRange"),
+                              });
+                              return;
+                            }
+                            const safeDue = Math.min(
+                              31,
+                              Math.max(1, editValues.due_day)
+                            );
+                            updateMut.mutate(
+                              {
+                                id: room.id,
+                                patch: {
+                                  tenant_name:
+                                    editValues.status === "occupied"
+                                      ? editValues.tenant_name.trim()
+                                      : null,
+                                  status: editValues.status,
+                                  rent_price: editValues.rent_price,
+                                  due_day: safeDue,
+                                },
+                              },
+                              {
+                                onSuccess: () => {
+                                  push({
+                                    type: "success",
+                                    message: t("roomUpdated"),
+                                  });
+                                  setEditingId(null);
+                                  setEditValues(null);
+                                },
+                                onError: (e) =>
+                                  push({
+                                    type: "error",
+                                    message:
+                                      e instanceof Error
+                                        ? e.message
+                                        : t("errorUpdateRoom"),
+                                  }),
+                              }
+                            );
+                          }}
+                          type="button"
+                          className="flex-1 bg-green-600 text-white rounded px-3 py-1 text-[11px] disabled:opacity-50"
+                        >
+                          {t("save")}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingId(null);
+                            setEditValues(null);
+                          }}
+                          type="button"
+                          className="flex-1 bg-gray-300 text-gray-800 rounded px-3 py-1 text-[11px]"
+                        >
+                          {t("cancel")}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

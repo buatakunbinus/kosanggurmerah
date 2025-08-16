@@ -13,14 +13,7 @@ import { formatCurrency } from "../../utils/format";
 import { expenseCreateSchema, safeParse } from "../../utils/validation";
 import { t } from "../../i18n/id";
 
-type ExpenseCategory =
-  | "electricity"
-  | "water"
-  | "repairs"
-  | "painting"
-  | "maintenance"
-  | "cleaning"
-  | "other";
+// Expense categories are enforced in validation schema; no local type needed.
 
 export const ExpensesPanel: React.FC = () => {
   const { push } = useToast();
@@ -148,17 +141,22 @@ export const ExpensesPanel: React.FC = () => {
           <select
             value={form.category}
             onChange={(e) =>
-              setForm((f) => ({ ...f, category: e.target.value }))
+              setForm((f) => ({
+                ...f,
+                category: e.target.value,
+                amount:
+                  e.target.value === "mother_deposit" ? 10000000 : f.amount,
+              }))
             }
             className="border rounded px-2 py-1"
           >
             <option value="electricity">{t("electricity")}</option>
             <option value="water">{t("water")}</option>
-            <option value="repairs">{t("repairs")}</option>
-            <option value="painting">{t("painting")}</option>
-            <option value="maintenance">{t("maintenance")}</option>
-            <option value="cleaning">{t("cleaning")}</option>
-            <option value="other">{t("other")}</option>
+            <option value="cleaning_fee">{t("cleaning_fee")}</option>
+            <option value="security_fee">{t("security_fee")}</option>
+            <option value="property_tax">{t("property_tax")}</option>
+            <option value="salary">{t("salary")}</option>
+            <option value="mother_deposit">{t("mother_deposit")}</option>
           </select>
           <input
             type="number"
@@ -263,16 +261,24 @@ export const ExpensesPanel: React.FC = () => {
                             {t("electricity")}
                           </option>
                           <option value="water">{t("water")}</option>
-                          <option value="repairs">{t("repairs")}</option>
-                          <option value="painting">{t("painting")}</option>
-                          <option value="maintenance">
-                            {t("maintenance")}
+                          <option value="cleaning_fee">
+                            {t("cleaning_fee")}
                           </option>
-                          <option value="cleaning">{t("cleaning")}</option>
-                          <option value="other">{t("other")}</option>
+                          <option value="security_fee">
+                            {t("security_fee")}
+                          </option>
+                          <option value="property_tax">
+                            {t("property_tax")}
+                          </option>
+                          <option value="salary">{t("salary")}</option>
+                          <option value="mother_deposit">
+                            {t("mother_deposit")}
+                          </option>
                         </select>
                       ) : (
-                        t(exp.category as ExpenseCategory)
+                        t(
+                          exp.category as keyof typeof import("../../i18n/id").strings
+                        )
                       )}
                     </td>
                     <td className="px-3 py-1">

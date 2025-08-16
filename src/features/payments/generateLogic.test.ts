@@ -23,7 +23,7 @@ describe("buildMissingPayments", () => {
     expect(rows[0].room_id).toBe("r2");
   });
 
-  it("bounds due_day to between 1 and 28 and defaults when missing", () => {
+  it("bounds due_day to between 1 and 31 (capped to month length) and defaults when missing", () => {
     const rows = buildMissingPayments(
       "2025-02",
       [
@@ -42,9 +42,24 @@ describe("buildMissingPayments", () => {
     );
     const map = Object.fromEntries(rows.map((r) => [r.room_id, r.due_date]));
     expect(map["a"]).toBe("2025-02-01");
-    expect(map["b"]).toBe("2025-02-28");
+    expect(map["b"]).toBe("2025-02-28"); // February caps at last day
     expect(map["c"]).toBe("2025-02-15");
     expect(map["d"]).toBe("2025-02-05");
+    // Additional month with 31 days to ensure 31 preserved
+    const march = buildMissingPayments(
+      "2025-03",
+      [
+        { id: "m", rent_price: 500, due_day: 31, status: "occupied" },
+        { id: "n", rent_price: 500, due_day: 35, status: "occupied" },
+      ],
+      [],
+      fixedNow
+    );
+    const marchMap = Object.fromEntries(
+      march.map((r) => [r.room_id, r.due_date])
+    );
+    expect(marchMap["m"]).toBe("2025-03-31");
+    expect(marchMap["n"]).toBe("2025-03-31");
     expect(map["e"]).toBeUndefined();
   });
 

@@ -6,7 +6,7 @@ export interface Room {
   rent_price: number;
   status: "occupied" | "vacant";
   tenant_name?: string | null;
-  due_day: number; // 1-28
+  due_day: number; // 1-31
   created_at: string;
   updated_at: string;
 }

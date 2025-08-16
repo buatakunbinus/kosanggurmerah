@@ -27,7 +27,12 @@ export function buildMissingPayments(
   return rooms
     .filter((r) => r.status === "occupied" && !existing.has(r.id))
     .map((r) => {
-      const boundedDay = Math.min(Math.max(r.due_day ?? 5, 1), 28);
+      // Allow configured due_day up to 31, but cap to actual last day of month to avoid spilling into next month
+      const rawDay = Math.min(Math.max(r.due_day ?? 5, 1), 31);
+      const daysInMonth = new Date(
+        Date.UTC(year, monthIndex + 1, 0)
+      ).getUTCDate();
+      const boundedDay = Math.min(rawDay, daysInMonth);
       // Create date in UTC to avoid timezone shifting to previous/next day
       const dueDate = new Date(Date.UTC(year, monthIndex, boundedDay));
       const isoDue = dueDate.toISOString().slice(0, 10);

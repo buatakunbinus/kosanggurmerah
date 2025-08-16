@@ -7,7 +7,7 @@ create table if not exists room (
   rent_price numeric(12,2) not null,
   status text not null check (status in ('occupied','vacant')),
   tenant_name text,
-  due_day smallint not null default 5 check (due_day between 1 and 28),
+  due_day smallint not null default 5 check (due_day between 1 and 31),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

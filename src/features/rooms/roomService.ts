@@ -1,12 +1,28 @@
 import { supabase } from "../../lib/supabaseClient";
 import { Room } from "../../types/models";
 
-const ALL_ROOM_NUMBERS = Array.from({ length: 60 }, (_, i) =>
-  (i + 1).toString().padStart(2, "0")
-);
+// New alphanumeric room coding scheme:
+// Floor 1: 1B - 1T (letters B..T)
+// Floor 2: 2A - 2W (letters A..W)
+// Floor 3: 3A - 3P (letters A..P)
+function letterRange(start: string, end: string): string[] {
+  const res: string[] = [];
+  for (let c = start.charCodeAt(0); c <= end.charCodeAt(0); c++) {
+    res.push(String.fromCharCode(c));
+  }
+  return res;
+}
+export const ROOM_CODES: string[] = [
+  ...letterRange("B", "T").map((l) => `1${l}`),
+  ...letterRange("A", "W").map((l) => `2${l}`),
+  ...letterRange("A", "P").map((l) => `3${l}`),
+];
+
 function validateRoomNumber(num: string) {
-  if (!ALL_ROOM_NUMBERS.includes(num)) {
-    throw new Error("Room number must be between 01 and 60");
+  if (!ROOM_CODES.includes(num)) {
+    throw new Error(
+      "Invalid room code. Expected one of: " + ROOM_CODES.join(", ")
+    );
   }
 }
 
@@ -48,6 +64,12 @@ export async function updateRoom(
 }
 
 export async function deleteRoom(id: string): Promise<void> {
+  // Manually delete dependent rows (payment, penalty) because FK is ON DELETE RESTRICT
+  // room_occupancy uses ON DELETE CASCADE so no manual step needed.
+  const paymentDel = await supabase.from("payment").delete().eq("room_id", id);
+  if (paymentDel.error) throw paymentDel.error;
+  const penaltyDel = await supabase.from("penalty").delete().eq("room_id", id);
+  if (penaltyDel.error) throw penaltyDel.error;
   const { error } = await supabase.from("room").delete().eq("id", id);
   if (error) throw error;
 }

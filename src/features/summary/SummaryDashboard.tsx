@@ -13,17 +13,7 @@ import {
 import { formatCurrency } from "../../utils/format";
 import { t } from "../../i18n/id";
 import { useMonth } from "../../ui/MonthContext";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  Line,
-  LineChart,
-} from "recharts";
+// Charts removed per request; simplified textual KPIs only.
 
 export const SummaryDashboard: React.FC = () => {
   const { month, setMonth } = useMonth();
@@ -70,6 +60,20 @@ export const SummaryDashboard: React.FC = () => {
   ]);
 
   const latest = summary[summary.length - 1];
+  // Aggregate totals across selected range
+  const aggregate = useMemo(() => {
+    if (!summary.length) return { gross: 0, expenses: 0, net: 0 };
+    return summary.reduce(
+      (acc, r) => {
+        const grossPart = r.rent_collected + r.penalties_collected; // total uang diterima
+        acc.gross += grossPart;
+        acc.expenses += r.expenses_total;
+        return acc;
+      },
+      { gross: 0, expenses: 0, net: 0 }
+    );
+  }, [summary]);
+  const netValue = aggregate.gross - aggregate.expenses;
   const loading =
     paymentsQ.isLoading ||
     penaltiesQ.isLoading ||
@@ -177,113 +181,24 @@ export const SummaryDashboard: React.FC = () => {
         </div>
       )}
       {summary.length > 0 && (
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white border rounded p-4">
-            <h3 className="text-sm font-medium mb-2">
-              {t("incomeVsExpenses")}
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={summary}
-                  margin={{ top: 8, right: 16, bottom: 4, left: 64 }}
-                  barCategoryGap="40%"
-                >
-                  <XAxis
-                    dataKey="month"
-                    tickFormatter={(m) => {
-                      const monthNum = Number(m.slice(5, 7));
-                      const indo = [
-                        "Jan",
-                        "Feb",
-                        "Mar",
-                        "Apr",
-                        "Mei",
-                        "Jun",
-                        "Jul",
-                        "Agu",
-                        "Sep",
-                        "Okt",
-                        "Nov",
-                        "Des",
-                      ];
-                      return indo[monthNum - 1] || m.slice(5);
-                    }}
-                  />
-                  <YAxis width={80} tickFormatter={(v) => formatCurrency(v)} />
-                  <Tooltip
-                    formatter={(v: number) => formatCurrency(v)}
-                    labelFormatter={(m) => m}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="rent_collected"
-                    stackId="a"
-                    fill="#0ea5e9"
-                    name={t("rentCollectedLegend")}
-                  />
-                  <Bar
-                    dataKey="penalties_collected"
-                    stackId="a"
-                    fill="#f87171"
-                    name={t("penaltiesCollectedLegend")}
-                  />
-                  <Bar
-                    dataKey="expenses_total"
-                    fill="#888888"
-                    name={t("expensesLegend")}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="bg-white border rounded p-4 flex flex-col gap-1">
+            <h3 className="text-sm font-medium">{t("totalGrossProfit")}</h3>
+            <p className="text-lg font-semibold text-green-700">
+              {formatCurrency(aggregate.gross)}
+            </p>
           </div>
-          <div className="bg-white border rounded p-4">
-            <h3 className="text-sm font-medium mb-2">{t("netProfit")}</h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={summary}
-                  margin={{ top: 8, right: 16, bottom: 4, left: 64 }}
-                >
-                  <XAxis
-                    dataKey="month"
-                    tickFormatter={(m) => {
-                      const monthNum = Number(m.slice(5, 7));
-                      const indo = [
-                        "Jan",
-                        "Feb",
-                        "Mar",
-                        "Apr",
-                        "Mei",
-                        "Jun",
-                        "Jul",
-                        "Agu",
-                        "Sep",
-                        "Okt",
-                        "Nov",
-                        "Des",
-                      ];
-                      return indo[monthNum - 1] || m.slice(5);
-                    }}
-                  />
-                  <YAxis width={80} tickFormatter={(v) => formatCurrency(v)} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="net_realized"
-                    stroke="#16a34a"
-                    name={t("netRealizedLegend")}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="net_gross"
-                    stroke="#6366f1"
-                    name={t("netGrossLegend")}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+          <div className="bg-white border rounded p-4 flex flex-col gap-1">
+            <h3 className="text-sm font-medium">{t("totalExpenses")}</h3>
+            <p className="text-lg font-semibold text-red-600">
+              {formatCurrency(aggregate.expenses)}
+            </p>
+          </div>
+          <div className="bg-white border rounded p-4 flex flex-col gap-1">
+            <h3 className="text-sm font-medium">{t("totalNetProfit")}</h3>
+            <p className="text-lg font-semibold text-indigo-700">
+              {formatCurrency(netValue)}
+            </p>
           </div>
         </div>
       )}

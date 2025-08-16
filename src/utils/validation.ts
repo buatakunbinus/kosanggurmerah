@@ -14,13 +14,13 @@ export const expenseCreateSchema = z.object({
     .string()
     .refine((v: string) => /\d{4}-\d{2}-\d{2}/.test(v), "Invalid date"),
   category: z.enum([
-    "electricity",
-    "water",
-    "repairs",
-    "painting",
-    "maintenance",
-    "cleaning",
-    "other",
+    "electricity", // Listrik
+    "water", // Air
+    "cleaning_fee", // Iuran Kebersihan
+    "security_fee", // Iuran Keamanan
+    "property_tax", // PBB
+    "salary", // Gaji
+    "mother_deposit", // Setoran Mak
   ]),
   amount: z.number().min(0, "Amount must be >= 0"),
   notes: z.string().max(300, "Max 300 chars").optional().or(z.literal("")),
@@ -32,7 +32,7 @@ export const roomCreateSchema = z.object({
   rent_price: z.number().min(0, "Rent must be >= 0"),
   status: z.enum(["occupied", "vacant"]),
   tenant_name: z.string().max(100, "Max 100 chars").nullable(),
-  due_day: z.number().int().min(1, "Due day 1-28").max(28, "Due day 1-28"),
+  due_day: z.number().int().min(1, "Due day 1-31").max(31, "Due day 1-31"),
 });
 export type RoomCreateInput = z.infer<typeof roomCreateSchema>;
 
