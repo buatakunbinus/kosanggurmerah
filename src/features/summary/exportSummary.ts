@@ -1,5 +1,7 @@
 import { utils, writeFile } from "xlsx";
 import jsPDF from "jspdf";
+import grapeLogo from "../../../public/grape.svg"; // assuming svg available; fallback handled
+import { formatCurrency } from "../../utils/format";
 import type { MonthlySummaryRow } from "../../types/models";
 
 const headers = [
@@ -74,49 +76,104 @@ export function exportSummaryToExcel(
   writeFile(wb, filename);
 }
 
+// Map nomor bulan ke nama Indonesia
+const MONTH_NAMES_ID = [
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
+];
+
 export function exportSummaryToPDF(
   rows: MonthlySummaryRow[],
-  filename = "monthly_summary.pdf"
+  filename = "ringkasan.pdf"
 ) {
   if (!rows.length) return;
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
-  const marginX = 40;
-  let y = 40;
-  doc.setFontSize(14);
-  doc.text("Monthly Financial Summary", marginX, y);
-  y += 20;
-  doc.setFontSize(9);
-  const headersRow = headers;
-  const colWidths = [60, 70, 70, 70, 70, 70, 70, 60];
-  function drawRow(cells: (string | number)[], bold = false) {
-    let x = marginX;
-    if (bold) doc.setFont("helvetica", "bold");
-    else doc.setFont("helvetica", "normal");
-    cells.forEach((c, i) => {
-      const text = String(c);
-      doc.text(text, x, y, { baseline: "top" });
-      x += colWidths[i];
-    });
-    y += 14;
+
+  // Aggregate across provided rows (assume filtered range)
+  const totals = rows.reduce(
+    (acc, r) => {
+      acc.rent_collected += r.rent_collected;
+      acc.penalties_collected += r.penalties_collected;
+      acc.expenses_total += r.expenses_total;
+      return acc;
+    },
+    { rent_collected: 0, penalties_collected: 0, expenses_total: 0 }
+  );
+  const gross = totals.rent_collected + totals.penalties_collected;
+  const net = gross - totals.expenses_total;
+
+  // Derive month label: if single month use its name, else range
+  let periodLabel: string;
+  if (rows.length === 1) {
+  const [y] = rows[0].month.split("-");
+    const monthIdx = Number(rows[0].month.slice(5, 7)) - 1;
+    periodLabel = `${MONTH_NAMES_ID[monthIdx]} ${y}`;
+  } else {
+    const first = rows[0].month;
+    const last = rows[rows.length - 1].month;
+    const fy = first.slice(0, 4);
+    const fm = Number(first.slice(5, 7)) - 1;
+    const ly = last.slice(0, 4);
+    const lm = Number(last.slice(5, 7)) - 1;
+    periodLabel = `${MONTH_NAMES_ID[fm]} ${fy} - ${MONTH_NAMES_ID[lm]} ${ly}`;
   }
-  drawRow(headersRow, true);
-  rows.forEach((r) => {
-    if (y > 760) {
-      // new page
-      doc.addPage();
-      y = 40;
-      drawRow(headersRow, true);
+
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const marginX = 48;
+  let y = 56;
+
+  // Try embed logo (if bundler inlines to data URI). If fails, continue silently.
+  try {
+    if (typeof grapeLogo === "string") {
+      doc.addImage(grapeLogo, "SVG", marginX, y - 24, 32, 32);
     }
-    drawRow([
-      r.month,
-      r.rent_invoiced,
-      r.rent_collected,
-      r.penalties_incurred,
-      r.penalties_collected,
-      r.expenses_total,
-      r.net_realized,
-      r.net_gross,
-    ]);
-  });
+  } catch (e) {
+    // ignore logo failure silently
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(`Logo - ${periodLabel}`, marginX + 40, y); // shifted if logo present
+  y += 40;
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  // Small vertical table
+  const labelWidth = 220; // align colons
+  function row(label: string, value: string, color?: [number, number, number]) {
+    if (color) doc.setTextColor(...color);
+    else doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", label.includes("Pendapatan") ? "bold" : "normal");
+    doc.text(label, marginX, y);
+    doc.text(":", marginX + labelWidth, y);
+    doc.text(value, marginX + labelWidth + 10, y);
+    y += 22;
+  }
+
+  row("Total Keuntungan Kotor", formatCurrency(gross), [34, 139, 34]);
+  row(
+    "Total Pengeluaran",
+    totals.expenses_total ? `(${formatCurrency(totals.expenses_total)})` : "0",
+    [178, 34, 34]
+  );
+  row("Total Pendapatan Bersih Net", formatCurrency(net), [48, 48, 150]);
+
+  doc.setTextColor(150, 150, 150);
+  doc.setFontSize(8);
+  doc.text(
+    "Dihasilkan otomatis oleh aplikasi Kos Anggur Merah",
+    marginX,
+    812
+  );
+
   doc.save(filename);
 }
