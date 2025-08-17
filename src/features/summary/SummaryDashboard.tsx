@@ -50,11 +50,21 @@ export const SummaryDashboard: React.FC = () => {
 
   const current = summary[0];
   // Derived KPIs per new definitions:
-  // Sewa Ditagihkan: total amount_due (semua pembayaran, lunas & belum) + total nominal denda bulan itu
-  // Sewa Terkumpul: total sewa yang sudah dibayar (rent_collected)
+  // Sewa Ditagihkan: total harga sewa semua kamar berstatus occupied bulan ini (independen dari ada/tidaknya payment record)
+  // Sewa Terkumpul: total sewa kamar yang sudah LUNAS (amount_paid >= amount_due) bulan ini
   // Denda Terjadi: jumlah aktivitas denda (count penalties)
   // Denda Terkumpul: total nominal denda (regardless paid) -> penalties_incurred
   const penaltyCount = penaltiesQ.data ? penaltiesQ.data.length : 0;
+  const occupiedRent = roomsQ.data
+    ? roomsQ.data
+        .filter((r) => r.status === "occupied")
+        .reduce((s, r) => s + r.rent_price, 0)
+    : 0;
+  const rentCollectedFull = paymentsQ.data
+    ? paymentsQ.data
+        .filter((p) => p.amount_paid !== null && p.amount_paid >= p.amount_due)
+        .reduce((s, p) => s + p.amount_due, 0)
+    : 0;
   const loading =
     paymentsQ.isLoading ||
     penaltiesQ.isLoading ||
@@ -120,11 +130,11 @@ export const SummaryDashboard: React.FC = () => {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
           <SummaryCard
             label={t("rentInvoiced")}
-            value={current.rent_invoiced + current.penalties_incurred}
+            value={occupiedRent}
           />
           <SummaryCard
             label={t("rentCollected")}
-            value={current.rent_collected}
+            value={rentCollectedFull}
           />
           <SummaryCard label={t("penaltiesIncurred")} value={penaltyCount} />
           <SummaryCard
