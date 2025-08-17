@@ -26,7 +26,7 @@ const initialForm: NewRoomFormState = {
   rent_price: 800000,
   tenant_name: "",
   status: "occupied",
-  due_day: 5,
+  due_day: 17, // default placeholder day (today)
 };
 
 export const RoomsTable: React.FC = () => {
@@ -206,6 +206,7 @@ export const RoomsTable: React.FC = () => {
             type="number"
             min={1}
             max={31}
+            placeholder="17"
             value={form.due_day}
             onChange={(e) =>
               setForm((f) => ({ ...f, due_day: Number(e.target.value) }))
