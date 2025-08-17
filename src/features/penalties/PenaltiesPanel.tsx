@@ -37,6 +37,11 @@ export const PenaltiesPanel: React.FC = () => {
   });
   const [error, setError] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValues, setEditingValues] = useState<{
+    custom_description: string;
+    notes: string;
+  } | null>(null);
 
   useEffect(() => {
     qc.invalidateQueries({ queryKey: ["penalties", month] });
@@ -131,6 +136,37 @@ export const PenaltiesPanel: React.FC = () => {
       id: p.id,
       patch: { paid: true, paid_date: new Date().toISOString().slice(0, 10) },
     });
+
+  const startEdit = (p: Penalty) => {
+    setEditingId(p.id);
+    setEditingValues({
+      custom_description: p.custom_description || "",
+      notes: p.notes || "",
+    });
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingValues(null);
+  };
+  const saveEdit = (p: Penalty) => {
+    if (!editingValues) return;
+    updateMut.mutate(
+      {
+        id: p.id,
+        patch: {
+          custom_description:
+            p.type === "custom" ? editingValues.custom_description : undefined,
+            // allow clearing notes -> null
+          notes: editingValues.notes ? editingValues.notes : null,
+        },
+      },
+      {
+        onSuccess: () => {
+          cancelEdit();
+        },
+      }
+    );
+  };
 
   return (
     <div className="space-y-3">
@@ -327,14 +363,39 @@ export const PenaltiesPanel: React.FC = () => {
                         {tenantName || <span className="text-gray-400">—</span>}
                       </td>
                       <td className="px-3 py-1">
-                        {p.type === "custom"
-                          ? p.custom_description || t("custom")
-                          : t(p.type)}
+                        {editingId === p.id && p.type === "custom" ? (
+                          <input
+                            value={editingValues?.custom_description || ""}
+                            onChange={(e) =>
+                              setEditingValues((v) =>
+                                v
+                                  ? { ...v, custom_description: e.target.value }
+                                  : v
+                              )
+                            }
+                            className="border rounded px-1 py-0.5 w-40"
+                          />
+                        ) : p.type === "custom" ? (
+                          p.custom_description || t("custom")
+                        ) : (
+                          t(p.type)
+                        )}
                       </td>
                       <td className="px-3 py-1">{formatCurrency(p.amount)}</td>
                       <td className="px-3 py-1">{p.incident_date}</td>
                       <td className="px-3 py-1">
-                        {p.paid ? (
+                        {editingId === p.id ? (
+                          <input
+                            placeholder={t("notes")}
+                            value={editingValues?.notes || ""}
+                            onChange={(e) =>
+                              setEditingValues((v) =>
+                                v ? { ...v, notes: e.target.value } : v
+                              )
+                            }
+                            className="border rounded px-1 py-0.5 w-40"
+                          />
+                        ) : p.paid ? (
                           <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded font-semibold">
                             {t("paid")}
                           </span>
@@ -345,22 +406,53 @@ export const PenaltiesPanel: React.FC = () => {
                         )}
                       </td>
                       <td className="px-3 py-1 space-x-2">
-                        {!p.paid && (
-                          <button
-                            onClick={() => markPaid(p)}
-                            className="text-xs text-indigo-600 hover:underline"
-                            disabled={updateMut.isPending}
-                          >
-                            {t("markPaid")}
-                          </button>
+                        {editingId === p.id ? (
+                          <>
+                            <button
+                              onClick={() => saveEdit(p)}
+                              className="text-xs text-green-600 hover:underline"
+                              disabled={updateMut.isPending}
+                              type="button"
+                            >
+                              {t("save")}
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              className="text-xs text-gray-600 hover:underline"
+                              type="button"
+                            >
+                              {t("cancel")}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {!p.paid && (
+                              <button
+                                onClick={() => markPaid(p)}
+                                className="text-xs text-indigo-600 hover:underline"
+                                disabled={updateMut.isPending}
+                                type="button"
+                              >
+                                {t("markPaid")}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => startEdit(p)}
+                              className="text-xs text-blue-600 hover:underline"
+                              type="button"
+                            >
+                              {t("edit")}
+                            </button>
+                            <button
+                              onClick={() => deleteMut.mutate(p.id)}
+                              className="text-xs text-red-600 hover:underline"
+                              disabled={deleteMut.isPending}
+                              type="button"
+                            >
+                              {t("delete")}
+                            </button>
+                          </>
                         )}
-                        <button
-                          onClick={() => deleteMut.mutate(p.id)}
-                          className="text-xs text-red-600 hover:underline"
-                          disabled={deleteMut.isPending}
-                        >
-                          {t("delete")}
-                        </button>
                       </td>
                     </tr>
                   );
