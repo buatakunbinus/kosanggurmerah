@@ -2,7 +2,7 @@ import { supabase } from "../../lib/supabaseClient";
 import { Room } from "../../types/models";
 
 // New alphanumeric room coding scheme:
-// Floor 1: 1B - 1T (letters B..T)
+// Floor 1: 1B - 1T, 1Y (skip 1U,1V,1W,1X per latest requirement)
 // Floor 2: 2A - 2W (letters A..W)
 // Floor 3: 3A - 3P (letters A..P)
 function letterRange(start: string, end: string): string[] {
@@ -13,8 +13,12 @@ function letterRange(start: string, end: string): string[] {
   return res;
 }
 export const ROOM_CODES: string[] = [
+  // Floor 1
   ...letterRange("B", "T").map((l) => `1${l}`),
+  "1Y",
+  // Floor 2
   ...letterRange("A", "W").map((l) => `2${l}`),
+  // Floor 3
   ...letterRange("A", "P").map((l) => `3${l}`),
 ];
 
