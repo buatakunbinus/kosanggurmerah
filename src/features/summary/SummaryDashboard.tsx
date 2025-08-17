@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listPayments } from "../payments/paymentService";
 import { listPenalties } from "../penalties/penaltyService";
@@ -16,25 +16,22 @@ import { useMonth } from "../../ui/MonthContext";
 // Charts removed per request; simplified textual KPIs only.
 
 export const SummaryDashboard: React.FC = () => {
-  const { month, setMonth } = useMonth();
-  const currentYear = new Date().getFullYear();
-  const [fromMonth, setFromMonth] = useState(`${currentYear}-01`);
-  const [toMonth, setToMonth] = useState(new Date().toISOString().slice(0, 7));
+  const { month, setMonth } = useMonth(); // single month focus per request
   const paymentsQ = useQuery({
-    queryKey: ["payments", "all"],
-    queryFn: () => listPayments(),
+    queryKey: ["payments", month],
+    queryFn: () => listPayments(month),
   });
   const roomsQ = useQuery({
     queryKey: ["rooms", "all"],
     queryFn: () => listRooms(),
   });
   const penaltiesQ = useQuery({
-    queryKey: ["penalties", "all"],
-    queryFn: () => listPenalties(),
+    queryKey: ["penalties", month],
+    queryFn: () => listPenalties(month),
   });
   const expensesQ = useQuery({
-    queryKey: ["expenses", "all"],
-    queryFn: () => listExpenses(),
+    queryKey: ["expenses", month],
+    queryFn: () => listExpenses(month),
   });
 
   const summary = useMemo(() => {
@@ -42,38 +39,22 @@ export const SummaryDashboard: React.FC = () => {
     const activeRoomIds = roomsQ.data
       ? new Set(roomsQ.data.map((r) => r.id))
       : undefined;
+    // compute only for current month
     return computeMonthlySummary(
       paymentsQ.data,
       penaltiesQ.data,
       expensesQ.data,
       activeRoomIds
-    )
-      .filter((r) => r.month >= fromMonth && r.month <= toMonth)
-      .sort((a, b) => a.month.localeCompare(b.month));
-  }, [
-    paymentsQ.data,
-    penaltiesQ.data,
-    expensesQ.data,
-    roomsQ.data,
-    fromMonth,
-    toMonth,
-  ]);
+    ).filter((r) => r.month === month);
+  }, [paymentsQ.data, penaltiesQ.data, expensesQ.data, roomsQ.data, month]);
 
-  const latest = summary[summary.length - 1];
-  // Aggregate totals across selected range
-  const aggregate = useMemo(() => {
-    if (!summary.length) return { gross: 0, expenses: 0, net: 0 };
-    return summary.reduce(
-      (acc, r) => {
-        const grossPart = r.rent_collected + r.penalties_collected; // total uang diterima
-        acc.gross += grossPart;
-        acc.expenses += r.expenses_total;
-        return acc;
-      },
-      { gross: 0, expenses: 0, net: 0 }
-    );
-  }, [summary]);
-  const netValue = aggregate.gross - aggregate.expenses;
+  const current = summary[0];
+  // Derived KPIs per new definitions:
+  // Sewa Ditagihkan: total amount_due (semua pembayaran, lunas & belum) + total nominal denda bulan itu
+  // Sewa Terkumpul: total sewa yang sudah dibayar (rent_collected)
+  // Denda Terjadi: jumlah aktivitas denda (count penalties)
+  // Denda Terkumpul: total nominal denda (regardless paid) -> penalties_incurred
+  const penaltyCount = penaltiesQ.data ? penaltiesQ.data.length : 0;
   const loading =
     paymentsQ.isLoading ||
     penaltiesQ.isLoading ||
@@ -96,26 +77,6 @@ export const SummaryDashboard: React.FC = () => {
           </label>
         </div>
         <div className="flex flex-wrap gap-2 items-center text-xs">
-          <label className="flex items-center gap-1">
-            {t("from")}
-            <input
-              type="month"
-              value={fromMonth}
-              max={toMonth}
-              onChange={(e) => setFromMonth(e.target.value)}
-              className="border rounded px-1 py-0.5 text-xs"
-            />
-          </label>
-          <label className="flex items-center gap-1">
-            {t("to")}
-            <input
-              type="month"
-              value={toMonth}
-              min={fromMonth}
-              onChange={(e) => setToMonth(e.target.value)}
-              className="border rounded px-1 py-0.5 text-xs"
-            />
-          </label>
           <button
             disabled={!summary.length}
             onClick={() => exportSummaryToCSV(summary)}
@@ -134,7 +95,9 @@ export const SummaryDashboard: React.FC = () => {
           </button>
           <button
             disabled={!summary.length}
-            onClick={() => exportSummaryToPDF(summary)}
+            onClick={async () => {
+              await exportSummaryToPDF(summary);
+            }}
             className="px-2 py-1 border rounded hover:bg-gray-50 disabled:opacity-40"
             aria-label="Export summary as PDF document"
           >
@@ -143,7 +106,7 @@ export const SummaryDashboard: React.FC = () => {
           {loading && <span className="text-gray-500">Loading...</span>}
         </div>
       </div>
-      {loading && !latest && (
+      {loading && !current && (
         <div className="grid md:grid-cols-6 gap-3 animate-pulse">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="p-3 rounded border bg-white">
@@ -153,53 +116,31 @@ export const SummaryDashboard: React.FC = () => {
           ))}
         </div>
       )}
-      {latest && (
+      {current && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-          <SummaryCard label={t("rentInvoiced")} value={latest.rent_invoiced} />
+          <SummaryCard
+            label={t("rentInvoiced")}
+            value={current.rent_invoiced + current.penalties_incurred}
+          />
           <SummaryCard
             label={t("rentCollected")}
-            value={latest.rent_collected}
+            value={current.rent_collected}
           />
-          <SummaryCard
-            label={t("penaltiesIncurred")}
-            value={latest.penalties_incurred}
-          />
+          <SummaryCard label={t("penaltiesIncurred")} value={penaltyCount} />
           <SummaryCard
             label={t("penaltiesCollected")}
-            value={latest.penalties_collected}
+            value={current.penalties_incurred}
           />
           <SummaryCard
             label={t("expenses")}
-            value={latest.expenses_total}
+            value={current.expenses_total}
             negative
           />
           <SummaryCard
             label={t("netRealized")}
-            value={latest.net_realized}
+            value={current.net_realized}
             highlight
           />
-        </div>
-      )}
-      {summary.length > 0 && (
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="bg-white border rounded p-4 flex flex-col gap-1">
-            <h3 className="text-sm font-medium">{t("totalGrossProfit")}</h3>
-            <p className="text-lg font-semibold text-green-700">
-              {formatCurrency(aggregate.gross)}
-            </p>
-          </div>
-          <div className="bg-white border rounded p-4 flex flex-col gap-1">
-            <h3 className="text-sm font-medium">{t("totalExpenses")}</h3>
-            <p className="text-lg font-semibold text-red-600">
-              {formatCurrency(aggregate.expenses)}
-            </p>
-          </div>
-          <div className="bg-white border rounded p-4 flex flex-col gap-1">
-            <h3 className="text-sm font-medium">{t("totalNetProfit")}</h3>
-            <p className="text-lg font-semibold text-indigo-700">
-              {formatCurrency(netValue)}
-            </p>
-          </div>
         </div>
       )}
       {!loading && summary.length === 0 && (

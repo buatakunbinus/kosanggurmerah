@@ -139,8 +139,10 @@ export const RoomsTable: React.FC = () => {
                     </button>
                   </span>
                   <span>
-                    {t("totalUnpaid")}: {" "}
-                    <span className="text-red-600">{Math.max(0, occupied - paid)}</span>
+                    {t("totalUnpaid")}:{" "}
+                    <span className="text-red-600">
+                      {Math.max(0, occupied - paid)}
+                    </span>
                   </span>
                   <span>
                     {t("roomsLeft")}:{" "}

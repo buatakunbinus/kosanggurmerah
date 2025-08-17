@@ -21,6 +21,7 @@ export const expenseCreateSchema = z.object({
     "property_tax", // PBB
     "salary", // Gaji
     "mother_deposit", // Setoran Mak
+    "dividend_expense", // Kebutuhan Lain (Dividen)
   ]),
   amount: z.number().min(0, "Amount must be >= 0"),
   notes: z.string().max(300, "Max 300 chars").optional().or(z.literal("")),

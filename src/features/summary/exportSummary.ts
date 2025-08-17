@@ -1,6 +1,7 @@
 import { utils, writeFile } from "xlsx";
 import jsPDF from "jspdf";
-import grapeLogo from "../../../public/grape.svg"; // assuming svg available; fallback handled
+// Logo di folder public (Vite akan serve di root path)
+const LOGO_URL = "/grape.svg";
 import { formatCurrency } from "../../utils/format";
 import type { MonthlySummaryRow } from "../../types/models";
 
@@ -92,7 +93,33 @@ const MONTH_NAMES_ID = [
   "Desember",
 ];
 
-export function exportSummaryToPDF(
+async function svgToPngDataUrl(url: string): Promise<string | null> {
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    await new Promise<void>((res, rej) => {
+      img.onload = () => res();
+      img.onerror = (e) => rej(e);
+    });
+    const canvas = document.createElement("canvas");
+    const size = 64; // fixed size for consistent output
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    // Center contain into square canvas
+    const scale = Math.min(size / img.width, size / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+    return canvas.toDataURL("image/png");
+  } catch {
+    return null;
+  }
+}
+
+export async function exportSummaryToPDF(
   rows: MonthlySummaryRow[],
   filename = "ringkasan.pdf"
 ) {
@@ -114,7 +141,7 @@ export function exportSummaryToPDF(
   // Derive month label: if single month use its name, else range
   let periodLabel: string;
   if (rows.length === 1) {
-  const [y] = rows[0].month.split("-");
+    const [y] = rows[0].month.split("-");
     const monthIdx = Number(rows[0].month.slice(5, 7)) - 1;
     periodLabel = `${MONTH_NAMES_ID[monthIdx]} ${y}`;
   } else {
@@ -131,18 +158,17 @@ export function exportSummaryToPDF(
   const marginX = 48;
   let y = 56;
 
-  // Try embed logo (if bundler inlines to data URI). If fails, continue silently.
-  try {
-    if (typeof grapeLogo === "string") {
-      doc.addImage(grapeLogo, "SVG", marginX, y - 24, 32, 32);
-    }
-  } catch (e) {
-    // ignore logo failure silently
+  // Render logo (SVG converted to PNG) if bisa
+  const logoDataUrl = await svgToPngDataUrl(LOGO_URL);
+  if (logoDataUrl) {
+    doc.addImage(logoDataUrl, "PNG", marginX, y - 32, 48, 48);
   }
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text(`Logo - ${periodLabel}`, marginX + 40, y); // shifted if logo present
+  const headerOffset = logoDataUrl ? 60 : 0;
+  // Tampilkan hanya nama periode; logo sudah ada di kiri
+  doc.text(`${periodLabel}`, marginX + headerOffset, y);
   y += 40;
 
   doc.setFontSize(11);
@@ -169,11 +195,7 @@ export function exportSummaryToPDF(
 
   doc.setTextColor(150, 150, 150);
   doc.setFontSize(8);
-  doc.text(
-    "Dihasilkan otomatis oleh aplikasi Kos Anggur Merah",
-    marginX,
-    812
-  );
+  doc.text("Dihasilkan otomatis oleh aplikasi Kos Anggur Merah", marginX, 812);
 
   doc.save(filename);
 }

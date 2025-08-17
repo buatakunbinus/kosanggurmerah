@@ -75,6 +75,7 @@ export const strings = {
   property_tax: "PBB",
   salary: "Gaji",
   mother_deposit: "Setoran Mak",
+  dividend_expense: "Kebutuhan Lain (Dividen)",
   other: "Lainnya",
   validationError: "Validasi gagal",
   noRooms: "Belum ada kamar",

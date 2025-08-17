@@ -157,6 +157,7 @@ export const ExpensesPanel: React.FC = () => {
             <option value="property_tax">{t("property_tax")}</option>
             <option value="salary">{t("salary")}</option>
             <option value="mother_deposit">{t("mother_deposit")}</option>
+            <option value="dividend_expense">{t("dividend_expense")}</option>
           </select>
           <input
             type="number"
@@ -273,6 +274,9 @@ export const ExpensesPanel: React.FC = () => {
                           <option value="salary">{t("salary")}</option>
                           <option value="mother_deposit">
                             {t("mother_deposit")}
+                          </option>
+                          <option value="dividend_expense">
+                            {t("dividend_expense")}
                           </option>
                         </select>
                       ) : (

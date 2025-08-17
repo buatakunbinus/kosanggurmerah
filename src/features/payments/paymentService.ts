@@ -6,9 +6,12 @@ import { buildMissingPayments } from "./generateLogic";
 export async function listPayments(month?: string): Promise<Payment[]> {
   let query = supabase.from("payment").select("*");
   if (month) {
+    const [y, m] = month.split("-").map(Number);
+    const nextMonth =
+      m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
     query = query
       .gte("billing_month", `${month}-01`)
-      .lt("billing_month", `${month}-31`);
+      .lt("billing_month", `${nextMonth}-01`);
   }
   const { data, error } = await query;
   if (error) throw error;
@@ -48,6 +51,9 @@ export async function deletePayment(id: string): Promise<void> {
 
 export async function generatePaymentsForMonth(month: string): Promise<number> {
   const firstDay = `${month}-01`;
+  const [y, m] = month.split("-").map(Number);
+  const nextMonth =
+    m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
   const { data: rooms, error: roomsError } = await supabase
     .from("room")
     .select("id, rent_price, due_day, status")
@@ -58,7 +64,7 @@ export async function generatePaymentsForMonth(month: string): Promise<number> {
     .from("payment")
     .select("room_id")
     .gte("billing_month", firstDay)
-    .lt("billing_month", `${month}-31`);
+    .lt("billing_month", `${nextMonth}-01`);
   if (payError) throw payError;
   type MinimalRoom = Pick<Room, "id" | "rent_price" | "due_day" | "status">;
   const toInsert = buildMissingPayments(
