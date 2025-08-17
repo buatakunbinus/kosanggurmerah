@@ -73,20 +73,20 @@ export const SummaryDashboard: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4 flex-wrap">
-          <h2 className="text-lg font-semibold">{t("monthlySummary")}</h2>
-          <label className="flex items-center gap-2 text-sm bg-white border rounded px-3 py-1 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <h2 className="text-base sm:text-lg font-semibold tracking-wide">{t("monthlySummary")}</h2>
+          <label className="flex items-center gap-2 text-xs sm:text-sm bg-white border rounded px-3 py-1 shadow-sm w-full sm:w-auto justify-between">
             <span className="font-medium">Bulan</span>
             <input
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="border rounded px-1 py-0.5 text-xs"
+              className="border rounded px-1 py-0.5 text-xs flex-1 sm:flex-none"
             />
           </label>
         </div>
-        <div className="flex flex-wrap gap-2 items-center text-xs">
+        <div className="flex flex-wrap gap-2 items-center text-[11px] sm:text-xs">
           <button
             disabled={!summary.length}
             onClick={() => exportSummaryToCSV(summary)}
@@ -127,7 +127,7 @@ export const SummaryDashboard: React.FC = () => {
         </div>
       )}
       {current && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <SummaryCard
             label={t("rentInvoiced")}
             value={occupiedRent}

@@ -191,7 +191,7 @@ export const PenaltiesPanel: React.FC = () => {
       {open && (
         <form
           onSubmit={onSubmit}
-          className="grid md:grid-cols-6 gap-3 bg-white p-4 border rounded text-xs"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 bg-white p-4 border rounded text-xs"
         >
           <select
             required
@@ -199,7 +199,7 @@ export const PenaltiesPanel: React.FC = () => {
             onChange={(e) =>
               setForm((f: PenaltyForm) => ({ ...f, room_id: e.target.value }))
             }
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 w-full"
           >
             <option value="">{t("room")}</option>
             {roomsQuery.data &&
@@ -217,7 +217,7 @@ export const PenaltiesPanel: React.FC = () => {
                 type: e.target.value as PenaltyForm["type"],
               }))
             }
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 w-full"
           >
             <option value="late_payment">{t("late_payment")}</option>
             <option value="overnight_guest">{t("overnight_guest")}</option>
@@ -233,7 +233,7 @@ export const PenaltiesPanel: React.FC = () => {
                   custom_description: e.target.value,
                 }))
               }
-              className="border rounded px-2 py-1"
+              className="border rounded px-2 py-1 w-full"
             />
           )}
           <input
@@ -245,7 +245,7 @@ export const PenaltiesPanel: React.FC = () => {
                 amount: e.target.value,
               }))
             }
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 w-full"
           />
           <input
             type="date"
@@ -256,7 +256,7 @@ export const PenaltiesPanel: React.FC = () => {
                 incident_date: e.target.value,
               }))
             }
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 w-full"
           />
           <input
             placeholder={t("notes")}
@@ -264,7 +264,7 @@ export const PenaltiesPanel: React.FC = () => {
             onChange={(e) =>
               setForm((f: PenaltyForm) => ({ ...f, notes: e.target.value }))
             }
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 w-full"
           />
           <div className="md:col-span-6 flex justify-end">
             <button

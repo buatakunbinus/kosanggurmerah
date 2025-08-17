@@ -26,10 +26,35 @@ const ProtectedArea: React.FC = () => {
         <HealthGate />
         <div className="space-y-10 pb-10">
           <SummaryDashboard />
+          {/* Mobile quick jump buttons */}
+          <div className="flex md:hidden gap-2 px-1 -mt-4">
+            <button
+              onClick={() => {
+                const el = document.getElementById("penalties-section");
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="flex-1 bg-orange-500 text-white rounded px-3 py-2 text-[11px] font-medium shadow active:scale-[.97]"
+            >
+              ↓ Denda
+            </button>
+            <button
+              onClick={() => {
+                const el = document.getElementById("expenses-section");
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="flex-1 bg-indigo-600 text-white rounded px-3 py-2 text-[11px] font-medium shadow active:scale-[.97]"
+            >
+              ↓ Pengeluaran
+            </button>
+          </div>
           <div className="space-y-10">
             <RoomsTable />
-            <PenaltiesPanel />
-            <ExpensesPanel />
+            <div id="penalties-section" className="scroll-mt-20">
+              <PenaltiesPanel />
+            </div>
+            <div id="expenses-section" className="scroll-mt-20">
+              <ExpensesPanel />
+            </div>
           </div>
         </div>
       </DashboardShell>

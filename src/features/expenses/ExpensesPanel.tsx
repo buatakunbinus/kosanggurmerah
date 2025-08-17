@@ -130,13 +130,13 @@ export const ExpensesPanel: React.FC = () => {
       {open && (
         <form
           onSubmit={onSubmit}
-          className="grid md:grid-cols-5 gap-3 bg-white p-4 border rounded text-xs"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-white p-4 border rounded text-xs"
         >
           <input
             type="date"
             value={form.date}
             onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 w-full"
           />
           <select
             value={form.category}
@@ -148,7 +148,7 @@ export const ExpensesPanel: React.FC = () => {
                   e.target.value === "mother_deposit" ? 10000000 : f.amount,
               }))
             }
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 w-full"
           >
             <option value="electricity">{t("electricity")}</option>
             <option value="water">{t("water")}</option>
@@ -165,13 +165,13 @@ export const ExpensesPanel: React.FC = () => {
             onChange={(e) =>
               setForm((f) => ({ ...f, amount: Number(e.target.value) }))
             }
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 w-full"
           />
           <input
             placeholder={t("notes")}
             value={form.notes}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-            className="border rounded px-2 py-1"
+            className="border rounded px-2 py-1 w-full"
           />
           <div className="flex justify-end">
             <button
