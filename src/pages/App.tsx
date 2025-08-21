@@ -31,7 +31,8 @@ const ProtectedArea: React.FC = () => {
             <button
               onClick={() => {
                 const el = document.getElementById("penalties-section");
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                if (el)
+                  el.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
               className="flex-1 bg-orange-500 text-white rounded px-3 py-2 text-[11px] font-medium shadow active:scale-[.97]"
             >
@@ -40,7 +41,8 @@ const ProtectedArea: React.FC = () => {
             <button
               onClick={() => {
                 const el = document.getElementById("expenses-section");
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                if (el)
+                  el.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
               className="flex-1 bg-indigo-600 text-white rounded px-3 py-2 text-[11px] font-medium shadow active:scale-[.97]"
             >

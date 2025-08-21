@@ -156,7 +156,7 @@ export const PenaltiesPanel: React.FC = () => {
         patch: {
           custom_description:
             p.type === "custom" ? editingValues.custom_description : undefined,
-            // allow clearing notes -> null
+          // allow clearing notes -> null
           notes: editingValues.notes ? editingValues.notes : null,
         },
       },

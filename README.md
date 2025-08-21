@@ -21,13 +21,13 @@ Manajemen kos (±60 kamar) – pantau sewa, denda, dan pengeluaran dalam satu ha
 
 ## 📊 Definisi KPI (Business Rules)
 
-| KPI | Definisi |
-| --- | -------- |
+| KPI             | Definisi                                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------------------- |
 | Sewa Ditagihkan | Jumlah rent_price semua kamar berstatus occupied pada bulan dipilih (terlepas dari sudah bayar / belum) |
-| Sewa Terkumpul | Total amount_due dari pembayaran yang statusnya lunas (amount_paid >= amount_due) |
-| Denda Terjadi | Jumlah (count) insiden denda bulan itu |
-| Denda Terkumpul | Total amount denda yang sudah tercatat (kini ditampilkan terpisah dari sewa) |
-| Pengeluaran | Total nominal `expenses` bulan tersebut |
+| Sewa Terkumpul  | Total amount_due dari pembayaran yang statusnya lunas (amount_paid >= amount_due)                       |
+| Denda Terjadi   | Jumlah (count) insiden denda bulan itu                                                                  |
+| Denda Terkumpul | Total amount denda yang sudah tercatat (kini ditampilkan terpisah dari sewa)                            |
+| Pengeluaran     | Total nominal `expenses` bulan tersebut                                                                 |
 
 Catatan: Perhitungan sewa tidak menjumlahkan denda. Denda dipantau sendiri agar transparan.
 
@@ -48,10 +48,10 @@ Frontend SPA (Vite + React + TypeScript) langsung ke Supabase (Postgres + Auth).
 
 1. Salin env: `cp .env.example .env`
 2. Isi nilai:
-    ```env
-    VITE_SUPABASE_URL=...your-url...
-    VITE_SUPABASE_ANON_KEY=...your-anon-key...
-    ```
+   ```env
+   VITE_SUPABASE_URL=...your-url...
+   VITE_SUPABASE_ANON_KEY=...your-anon-key...
+   ```
 3. Install dependency: `npm install`
 4. Jalankan dev server: `npm run dev`
 5. Buka `http://localhost:5173`
@@ -86,21 +86,21 @@ node scripts/print-seed.js
 
 ## 🔐 Environment Variables
 
-| Variable | Deskripsi |
-| -------- | --------- |
-| VITE_SUPABASE_URL | URL project Supabase |
-| VITE_SUPABASE_ANON_KEY | Anon public key |
+| Variable               | Deskripsi            |
+| ---------------------- | -------------------- |
+| VITE_SUPABASE_URL      | URL project Supabase |
+| VITE_SUPABASE_ANON_KEY | Anon public key      |
 
 Jangan pernah commit service role key. Prefix `VITE_` wajib untuk diakses frontend (Vite).
 
 ## ✅ Testing & Quality
 
-| Perintah | Fungsi |
-| -------- | ------ |
-| `npm test` | Jalankan tes (Vitest) |
-| `npm run test:coverage` | Laporan coverage |
-| `npm run typecheck` | Cek TypeScript |
-| `npm run lint` | (Jika konfigurasi ESLint aktif) |
+| Perintah                | Fungsi                          |
+| ----------------------- | ------------------------------- |
+| `npm test`              | Jalankan tes (Vitest)           |
+| `npm run test:coverage` | Laporan coverage                |
+| `npm run typecheck`     | Cek TypeScript                  |
+| `npm run lint`          | (Jika konfigurasi ESLint aktif) |
 
 ## 📦 Build & Deploy (Vercel)
 
@@ -126,13 +126,13 @@ Jangan pernah commit service role key. Prefix `VITE_` wajib untuk diakses fronte
 
 ## 🔄 Script Penting
 
-| Script | Deskripsi |
-| ------ | --------- |
-| `npm run dev` | Jalankan server dev Vite |
-| `npm run build` | Build production |
-| `npm run preview` | Preview build |
+| Script                       | Deskripsi                                       |
+| ---------------------------- | ----------------------------------------------- |
+| `npm run dev`                | Jalankan server dev Vite                        |
+| `npm run build`              | Build production                                |
+| `npm run preview`            | Preview build                                   |
 | `node scripts/apply-seed.js` | Terapkan seed ke database (butuh PG_CONNECTION) |
-| `node scripts/print-seed.js` | Cetak file seed SQL |
+| `node scripts/print-seed.js` | Cetak file seed SQL                             |
 
 ## ⚙️ Logika Pembayaran / Status
 
@@ -150,12 +150,12 @@ Jangan pernah commit service role key. Prefix `VITE_` wajib untuk diakses fronte
 
 ## 🧪 Tips Debug Cepat
 
-| Gejala | Aksi |
-| ------ | ---- |
-| Data tidak muncul | Cek console network & env URL/key benar |
-| Status tetap "Belum Bayar" setelah input | Pastikan amount_paid >= amount_due |
-| PDF kosong | Pastikan summary punya data (pilih bulan dengan kamar occupied) |
-| Seed gagal | Pastikan `psql` ada di PATH & `PG_CONNECTION` valid |
+| Gejala                                   | Aksi                                                            |
+| ---------------------------------------- | --------------------------------------------------------------- |
+| Data tidak muncul                        | Cek console network & env URL/key benar                         |
+| Status tetap "Belum Bayar" setelah input | Pastikan amount_paid >= amount_due                              |
+| PDF kosong                               | Pastikan summary punya data (pilih bulan dengan kamar occupied) |
+| Seed gagal                               | Pastikan `psql` ada di PATH & `PG_CONNECTION` valid             |
 
 ## 📝 Lisensi
 
