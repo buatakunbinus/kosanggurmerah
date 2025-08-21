@@ -4,9 +4,12 @@ import { Penalty } from "../../types/models";
 export async function listPenalties(month?: string): Promise<Penalty[]> {
   let query = supabase.from("penalty").select("*");
   if (month) {
+    const [y, m] = month.split("-").map(Number);
+    const nextMonth =
+      m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
     query = query
       .gte("incident_date", `${month}-01`)
-      .lt("incident_date", `${month}-31`);
+      .lt("incident_date", `${nextMonth}-01`);
   }
   const { data, error } = await query.order("incident_date");
   if (error) throw error;

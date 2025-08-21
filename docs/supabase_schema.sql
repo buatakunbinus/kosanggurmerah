@@ -44,6 +44,11 @@ create table if not exists expense (
   created_at timestamptz not null default now()
 );
 
+-- Performance indexes (add only once; safe with IF NOT EXISTS)
+create index if not exists idx_payment_billing_month on payment (billing_month);
+create index if not exists idx_penalty_incident_date on penalty (incident_date);
+create index if not exists idx_expense_date on expense (date);
+
 create table if not exists penalty (
   id uuid primary key default gen_random_uuid(),
   room_id uuid not null references room(id) on delete restrict,

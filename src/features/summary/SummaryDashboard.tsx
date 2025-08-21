@@ -1,5 +1,6 @@
-import React, { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useMemo, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Payment, Penalty } from "../../types/models";
 import { listPayments } from "../payments/paymentService";
 import { listPenalties } from "../penalties/penaltyService";
 import { listExpenses } from "../expenses/expenseService";
@@ -13,22 +14,41 @@ import { useMonth } from "../../ui/MonthContext";
 
 export const SummaryDashboard: React.FC = () => {
   const { month, setMonth } = useMonth(); // single month focus per request
-  const paymentsQ = useQuery({
+  const qc = useQueryClient();
+  // Helpers to navigate months
+  const [year, mon] = month.split("-").map(Number);
+  const prevMonth = mon === 1 ? `${year - 1}-12` : `${year}-${String(mon - 1).padStart(2, "0")}`;
+  const nextMonth = mon === 12 ? `${year + 1}-01` : `${year}-${String(mon + 1).padStart(2, "0")}`;
+  const paymentsQ = useQuery<ReturnType<typeof listPayments> extends Promise<infer T> ? T : unknown>({
     queryKey: ["payments", month],
     queryFn: () => listPayments(month),
+    staleTime: 60_000,
   });
   const roomsQ = useQuery({
     queryKey: ["rooms", "all"],
     queryFn: () => listRooms(),
+    staleTime: 5 * 60_000,
   });
-  const penaltiesQ = useQuery({
+  const penaltiesQ = useQuery<ReturnType<typeof listPenalties> extends Promise<infer T> ? T : unknown>({
     queryKey: ["penalties", month],
     queryFn: () => listPenalties(month),
+    staleTime: 60_000,
   });
-  const expensesQ = useQuery({
+  const expensesQ = useQuery<ReturnType<typeof listExpenses> extends Promise<infer T> ? T : unknown>({
     queryKey: ["expenses", month],
     queryFn: () => listExpenses(month),
+    staleTime: 60_000,
   });
+
+  // Prefetch previous & next month data opportunistically for smoother navigation
+  useEffect(() => {
+    qc.prefetchQuery({ queryKey: ["payments", prevMonth], queryFn: () => listPayments(prevMonth) });
+    qc.prefetchQuery({ queryKey: ["payments", nextMonth], queryFn: () => listPayments(nextMonth) });
+    qc.prefetchQuery({ queryKey: ["penalties", prevMonth], queryFn: () => listPenalties(prevMonth) });
+    qc.prefetchQuery({ queryKey: ["penalties", nextMonth], queryFn: () => listPenalties(nextMonth) });
+    qc.prefetchQuery({ queryKey: ["expenses", prevMonth], queryFn: () => listExpenses(prevMonth) });
+    qc.prefetchQuery({ queryKey: ["expenses", nextMonth], queryFn: () => listExpenses(nextMonth) });
+  }, [qc, prevMonth, nextMonth]);
 
   const summary = useMemo(() => {
     if (!paymentsQ.data || !penaltiesQ.data || !expensesQ.data) return [];
@@ -50,17 +70,17 @@ export const SummaryDashboard: React.FC = () => {
   // Sewa Terkumpul: total sewa kamar yang sudah LUNAS (amount_paid >= amount_due) bulan ini
   // Denda Terjadi: jumlah aktivitas denda (count penalties)
   // Denda Terkumpul: total nominal denda (regardless paid) -> penalties_incurred
-  const penaltyCount = penaltiesQ.data ? penaltiesQ.data.length : 0;
+  const penaltiesData = (penaltiesQ.data as Penalty[]) || [];
+  const penaltyCount = penaltiesData.length;
   const occupiedRent = roomsQ.data
     ? roomsQ.data
         .filter((r) => r.status === "occupied")
         .reduce((s, r) => s + r.rent_price, 0)
     : 0;
-  const rentCollectedFull = paymentsQ.data
-    ? paymentsQ.data
-        .filter((p) => p.amount_paid !== null && p.amount_paid >= p.amount_due)
-        .reduce((s, p) => s + p.amount_due, 0)
-    : 0;
+  const paymentsData = (paymentsQ.data as Payment[]) || [];
+  const rentCollectedFull = paymentsData
+    .filter((p) => p.amount_paid !== null && p.amount_paid >= p.amount_due)
+    .reduce((s, p) => s + p.amount_due, 0);
   const loading =
     paymentsQ.isLoading ||
     penaltiesQ.isLoading ||
@@ -71,7 +91,9 @@ export const SummaryDashboard: React.FC = () => {
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-          <h2 className="text-base sm:text-lg font-semibold tracking-wide">{t("monthlySummary")}</h2>
+          <h2 className="text-base sm:text-lg font-semibold tracking-wide">
+            {t("monthlySummary")}
+          </h2>
           <label className="flex items-center gap-2 text-xs sm:text-sm bg-white border rounded px-3 py-1 shadow-sm w-full sm:w-auto justify-between">
             <span className="font-medium">Bulan</span>
             <input
@@ -106,14 +128,8 @@ export const SummaryDashboard: React.FC = () => {
       )}
       {current && (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-          <SummaryCard
-            label={t("rentInvoiced")}
-            value={occupiedRent}
-          />
-          <SummaryCard
-            label={t("rentCollected")}
-            value={rentCollectedFull}
-          />
+          <SummaryCard label={t("rentInvoiced")} value={occupiedRent} />
+          <SummaryCard label={t("rentCollected")} value={rentCollectedFull} />
           <SummaryCard label={t("penaltiesIncurred")} value={penaltyCount} />
           <SummaryCard
             label={t("penaltiesCollected")}
@@ -161,7 +177,7 @@ const SummaryCard: React.FC<{
           : "text-gray-900"
       }`}
     >
-  {negative ? `-${formatCurrency(value)}` : formatCurrency(value)}
+      {negative ? `-${formatCurrency(value)}` : formatCurrency(value)}
     </div>
   </div>
 );

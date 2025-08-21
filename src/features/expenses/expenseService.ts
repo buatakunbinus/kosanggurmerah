@@ -4,7 +4,10 @@ import { Expense } from "../../types/models";
 export async function listExpenses(month?: string): Promise<Expense[]> {
   let query = supabase.from("expense").select("*");
   if (month) {
-    query = query.gte("date", `${month}-01`).lt("date", `${month}-31`);
+    const [y, m] = month.split("-").map(Number);
+    const nextMonth =
+      m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+    query = query.gte("date", `${month}-01`).lt("date", `${nextMonth}-01`);
   }
   const { data, error } = await query.order("date");
   if (error) throw error;
