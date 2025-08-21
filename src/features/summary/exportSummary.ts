@@ -1,81 +1,10 @@
-import { utils, writeFile } from "xlsx";
 import jsPDF from "jspdf";
 // Logo di folder public (Vite akan serve di root path)
 const LOGO_URL = "/grape.svg";
 import { formatCurrency } from "../../utils/format";
 import type { MonthlySummaryRow } from "../../types/models";
 
-const headers = [
-  "month",
-  "rent_invoiced",
-  "rent_collected",
-  "penalties_incurred",
-  "penalties_collected",
-  "expenses_total",
-  "net_realized",
-  "net_gross",
-];
-
-export function buildCsvLines(rows: MonthlySummaryRow[]): string[] {
-  if (!rows.length) return [];
-  const lines = [headers.join(",")];
-  for (const r of rows) {
-    lines.push(
-      [
-        r.month,
-        r.rent_invoiced,
-        r.rent_collected,
-        r.penalties_incurred,
-        r.penalties_collected,
-        r.expenses_total,
-        r.net_realized,
-        r.net_gross,
-      ].join(",")
-    );
-  }
-  return lines;
-}
-
-export function exportSummaryToCSV(
-  rows: MonthlySummaryRow[],
-  filename = "monthly_summary.csv"
-) {
-  const lines = buildCsvLines(rows);
-  if (!lines.length) return;
-  const blob = new Blob([lines.join("\n")], {
-    type: "text/csv;charset=utf-8;",
-  });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
-
-export function buildWorksheetData(rows: MonthlySummaryRow[]) {
-  return rows.map((r) => ({
-    month: r.month,
-    rent_invoiced: r.rent_invoiced,
-    rent_collected: r.rent_collected,
-    penalties_incurred: r.penalties_incurred,
-    penalties_collected: r.penalties_collected,
-    expenses_total: r.expenses_total,
-    net_realized: r.net_realized,
-    net_gross: r.net_gross,
-  }));
-}
-
-export function exportSummaryToExcel(
-  rows: MonthlySummaryRow[],
-  filename = "monthly_summary.xlsx"
-) {
-  if (!rows.length) return;
-  const worksheetData = buildWorksheetData(rows);
-  const ws = utils.json_to_sheet(worksheetData, { header: headers });
-  const wb = utils.book_new();
-  utils.book_append_sheet(wb, ws, "Summary");
-  writeFile(wb, filename);
-}
+// CSV & Excel export dihapus sesuai permintaan – hanya PDF.
 
 // Map nomor bulan ke nama Indonesia
 const MONTH_NAMES_ID = [
@@ -188,7 +117,7 @@ export async function exportSummaryToPDF(
   row("Total Keuntungan Kotor", formatCurrency(gross), [34, 139, 34]);
   row(
     "Total Pengeluaran",
-    totals.expenses_total ? `(${formatCurrency(totals.expenses_total)})` : "0",
+    totals.expenses_total ? `-${formatCurrency(totals.expenses_total)}` : "0",
     [178, 34, 34]
   );
   row("Total Pendapatan Bersih Net", formatCurrency(net), [48, 48, 150]);
