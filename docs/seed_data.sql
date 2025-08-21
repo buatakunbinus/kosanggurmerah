@@ -44,6 +44,54 @@ values
   ((select m_prev + 12 from months), 'internet', 400000, 'ISP')
 on conflict do nothing;
 
+-- Recurring monthly expenses (requested): Sep 2025 - Jul 2026
+-- Pattern per month (dates): 01 Gaji, 03 Setoran Mak (Pertama), 04 Listrik, 20 Setoran Mak (Kedua)
+insert into expense (date, category, amount, notes) values
+  ('2025-09-01', 'Gaji', 4500000, 'Gaji ber3'),
+  ('2025-09-03', 'Setoran Mak', 5000000, 'Setor Emak Ho Pertama'),
+  ('2025-09-04', 'Listrik', 15000000, 'Listrik Air Kuota Wifi Mak Semua'),
+  ('2025-09-20', 'Setoran Mak', 5000000, 'Setor Emak Ho Kedua'),
+  ('2025-10-01', 'Gaji', 4500000, 'Gaji ber3'),
+  ('2025-10-03', 'Setoran Mak', 5000000, 'Setor Emak Ho Pertama'),
+  ('2025-10-04', 'Listrik', 15000000, 'Listrik Air Kuota Wifi Mak Semua'),
+  ('2025-10-20', 'Setoran Mak', 5000000, 'Setor Emak Ho Kedua'),
+  ('2025-11-01', 'Gaji', 4500000, 'Gaji ber3'),
+  ('2025-11-03', 'Setoran Mak', 5000000, 'Setor Emak Ho Pertama'),
+  ('2025-11-04', 'Listrik', 15000000, 'Listrik Air Kuota Wifi Mak Semua'),
+  ('2025-11-20', 'Setoran Mak', 5000000, 'Setor Emak Ho Kedua'),
+  ('2025-12-01', 'Gaji', 4500000, 'Gaji ber3'),
+  ('2025-12-03', 'Setoran Mak', 5000000, 'Setor Emak Ho Pertama'),
+  ('2025-12-04', 'Listrik', 15000000, 'Listrik Air Kuota Wifi Mak Semua'),
+  ('2025-12-20', 'Setoran Mak', 5000000, 'Setor Emak Ho Kedua'),
+  ('2026-01-01', 'Gaji', 4500000, 'Gaji ber3'),
+  ('2026-01-03', 'Setoran Mak', 5000000, 'Setor Emak Ho Pertama'),
+  ('2026-01-04', 'Listrik', 15000000, 'Listrik Air Kuota Wifi Mak Semua'),
+  ('2026-01-20', 'Setoran Mak', 5000000, 'Setor Emak Ho Kedua'),
+  ('2026-02-01', 'Gaji', 4500000, 'Gaji ber3'),
+  ('2026-02-03', 'Setoran Mak', 5000000, 'Setor Emak Ho Pertama'),
+  ('2026-02-04', 'Listrik', 15000000, 'Listrik Air Kuota Wifi Mak Semua'),
+  ('2026-02-20', 'Setoran Mak', 5000000, 'Setor Emak Ho Kedua'),
+  ('2026-03-01', 'Gaji', 4500000, 'Gaji ber3'),
+  ('2026-03-03', 'Setoran Mak', 5000000, 'Setor Emak Ho Pertama'),
+  ('2026-03-04', 'Listrik', 15000000, 'Listrik Air Kuota Wifi Mak Semua'),
+  ('2026-03-20', 'Setoran Mak', 5000000, 'Setor Emak Ho Kedua'),
+  ('2026-04-01', 'Gaji', 4500000, 'Gaji ber3'),
+  ('2026-04-03', 'Setoran Mak', 5000000, 'Setor Emak Ho Pertama'),
+  ('2026-04-04', 'Listrik', 15000000, 'Listrik Air Kuota Wifi Mak Semua'),
+  ('2026-04-20', 'Setoran Mak', 5000000, 'Setor Emak Ho Kedua'),
+  ('2026-05-01', 'Gaji', 4500000, 'Gaji ber3'),
+  ('2026-05-03', 'Setoran Mak', 5000000, 'Setor Emak Ho Pertama'),
+  ('2026-05-04', 'Listrik', 15000000, 'Listrik Air Kuota Wifi Mak Semua'),
+  ('2026-05-20', 'Setoran Mak', 5000000, 'Setor Emak Ho Kedua'),
+  ('2026-06-01', 'Gaji', 4500000, 'Gaji ber3'),
+  ('2026-06-03', 'Setoran Mak', 5000000, 'Setor Emak Ho Pertama'),
+  ('2026-06-04', 'Listrik', 15000000, 'Listrik Air Kuota Wifi Mak Semua'),
+  ('2026-06-20', 'Setoran Mak', 5000000, 'Setor Emak Ho Kedua'),
+  ('2026-07-01', 'Gaji', 4500000, 'Gaji ber3'),
+  ('2026-07-03', 'Setoran Mak', 5000000, 'Setor Emak Ho Pertama'),
+  ('2026-07-04', 'Listrik', 15000000, 'Listrik Air Kuota Wifi Mak Semua'),
+  ('2026-07-20', 'Setoran Mak', 5000000, 'Setor Emak Ho Kedua');
+
 commit;
 
 -- Verification:
